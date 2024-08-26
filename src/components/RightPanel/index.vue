@@ -13,7 +13,6 @@
 </template>
 
 <script>
-import { addClass, removeClass } from '@/utils'
 
 export default {
   name: 'RightPanel',
@@ -43,9 +42,9 @@ export default {
         this.addEventClick()
       }
       if (value) {
-        addClass(document.body, 'showRightPanel')
+        document.body.classList.add('showRightPanel')
       } else {
-        removeClass(document.body, 'showRightPanel')
+        document.body.classList.remove('showRightPanel')
       }
     }
   },
