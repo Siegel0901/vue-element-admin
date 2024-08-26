@@ -1,4 +1,5 @@
-import { login, logout, getInfo } from '@/api/user'
+import { getInfo, getAvatar } from '@/api/user'
+import { login, logout } from '@/api/auth'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import router, { resetRouter } from '@/router'
 
@@ -31,12 +32,11 @@ const mutations = {
 const actions = {
   // user login
   login({ commit }, userInfo) {
-    const { username, password } = userInfo
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password }).then(response => {
-        const { data } = response
-        commit('SET_TOKEN', data.token)
-        setToken(data.token)
+      login(userInfo).then(response => {
+        commit('SET_TOKEN', getToken())
+        // const { data } = response
+        // setToken(data.token)
         resolve()
       }).catch(error => {
         reject(error)
@@ -48,24 +48,24 @@ const actions = {
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
       getInfo(state.token).then(response => {
-        const { data } = response
+        const { data } = response.data
 
         if (!data) {
           reject('Verification failed, please Login again.')
         }
 
-        const { roles, name, avatar, introduction } = data
-
+        const { roleList, permissionList, userName, introduction } = data
+        const roles = [...roleList, ...permissionList]
         // roles must be a non-empty array
         if (!roles || roles.length <= 0) {
           reject('getInfo: roles must be a non-null array!')
         }
 
         commit('SET_ROLES', roles)
-        commit('SET_NAME', name)
-        commit('SET_AVATAR', avatar)
+        commit('SET_NAME', userName)
         commit('SET_INTRODUCTION', introduction)
-        resolve(data)
+        getAvatar().then(url => { commit('SET_AVATAR', url) })
+        resolve({ ...data, roles })
       }).catch(error => {
         reject(error)
       })
@@ -82,7 +82,6 @@ const actions = {
         resetRouter()
 
         // reset visited views and cached views
-        // to fixed https://github.com/PanJiaChen/vue-element-admin/issues/2485
         dispatch('tagsView/delAllViews', null, { root: true })
 
         resolve()
@@ -120,6 +119,18 @@ const actions = {
 
     // reset visited views and cached views
     dispatch('tagsView/delAllViews', null, { root: true })
+  },
+
+  // get user avatar
+  getAvatar({ commit }) {
+    return new Promise((resolve, reject) => {
+      getAvatar().then(url => {
+        commit('SET_AVATAR', url)
+        resolve(url)
+      }).catch(error => {
+        reject(error)
+      })
+    })
   }
 }
 
